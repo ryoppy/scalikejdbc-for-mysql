@@ -22,6 +22,36 @@ class ScalikejdbcForMysqlSpec extends Specification with TestHelper {
         .map(_.string(1)).list().apply()
       r must_== List("a,a", "b")
     }
+    "case statement" in new AutoRollback {
+      applyUpdate {
+        insert.into(Groups).columns(c.name).valuesBulk(Seq("a"), Seq("b"), Seq("c"))
+      }
+      val r = withSQL {
+        select(
+          sqls
+            .caseA
+            .when(sqls.eq(g.name, "a")).thenA("one")
+            .when(sqls.eq(g.name, "b")).thenA("two")
+            .elseA("other")
+            .end
+        ).from(Groups as g)
+      }
+        .map(_.string(1)).list().apply()
+      r must_== List("one", "two", "other")
+
+      val r2 = withSQL {
+        select(
+          sqls
+            .caseA(g.name)
+            .when("a").thenA("one")
+            .when("b").thenA("two")
+            .elseA("other")
+            .end
+        ).from(Groups as g)
+      }
+        .map(_.string(1)).list().apply()
+      r2 must_== List("one", "two", "other")
+    }
   }
 
   "InsertSQLBuilderPlus" should {

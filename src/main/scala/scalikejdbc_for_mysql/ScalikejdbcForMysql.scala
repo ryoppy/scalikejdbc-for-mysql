@@ -1,12 +1,19 @@
 package scalikejdbc_for_mysql
 
 import scalikejdbc._
+import scalikejdbc_for_mysql.builder.CaseBuilder
 
 object ScalikejdbcForMysql {
 
   implicit class SqlSyntaxExtender(that: sqls.type) {
     /**
      * make `group_concat` expression
+     *
+     * {{{
+     * sqls.groupConcat(g.name, ",")
+     * // group_concat(g.name separator ',')
+     * }}}
+     *
      * @param column target group column.
      * @param separator separator string.
      * @return (ex) group_concat(foo separator ',')
@@ -14,6 +21,29 @@ object ScalikejdbcForMysql {
     def groupConcat(column: SQLSyntax, separator: String): SQLSyntax = {
       sqls"group_concat(${column} separator ${sqls"${separator}"})"
     }
+
+    /**
+     * case expression
+     * `case` or caseA.
+     *
+     * {{{
+     * sqls
+     *   .caseA
+     *   .when(sqls.eq(g.id, 1)).thenA("one")
+     *   .when(sqls.eq(g.id, 2)).thenA("two")
+     *   .elseA("other")
+     *   .end
+     * // (case when g.id = 1 then 'one' when g.id = 2 then 'two' else 'other' end)
+     * }}}
+     *
+     * @param sql
+     * @tparam A
+     * @return
+     */
+    def `case`[A](sql: SQLSyntax): CaseBuilder[A] = CaseBuilder[A](sqls"(case ${sql}")
+    def `case`[A]: CaseBuilder[A] = CaseBuilder[A](sqls"(case ")
+    def caseA[A](sql: SQLSyntax): CaseBuilder[A] = `case`[A](sql)
+    def caseA[A]: CaseBuilder[A] = `case`[A]
   }
 
   implicit class InsertSQLBuilderExtender(that: InsertSQLBuilder) {
